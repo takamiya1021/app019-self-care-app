@@ -1,4 +1,4 @@
-import { StretchGuide } from '@/types'
+import { StretchGuide, StretchTarget } from '@/types'
 
 export const stretchGuides: StretchGuide[] = [
   {
