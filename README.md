@@ -72,6 +72,26 @@
 
 ---
 
+## 🗂️ ファイル構成メモ
+
+```
+src/
+├─ app/                # 画面エントリ（App Router）
+│   ├─ page.tsx        # ホーム画面
+│   └─ offline/        # オフライン時のフォールバック
+├─ components/         # セルフケア別コンポーネント
+├─ hooks/              # 共通フック（useStepAudio など）
+├─ lib/                # データ・ユーティリティ・ストレージ
+└─ types/              # 型定義
+public/
+├─ audio/              # VOICEVOX 生成音声
+└─ icons/              # PWA アイコン
+```
+
+開発者向けの詳細技術情報は `doc/requirements.md` / `doc/technical-design.md` / `doc/implementation-plan.md` に整理しています。
+
+---
+
 ## 🤝 フィードバック・お問い合わせ
 
 感想や不具合報告、こんなセルフケアを追加してほしいといった要望があれば、Issue や Pull Request でお気軽にどうぞ。  
