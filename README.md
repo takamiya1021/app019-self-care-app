@@ -54,6 +54,24 @@
 
 ---
 
+## 🔊 音声ガイドのしくみ
+
+- **VOICEVOX で自動生成**  
+  すべての音声ガイドは VOICEVOX（speaker: No.10, speedScale: 0.85）で作成。  
+  `generate_voicevox_audio.py` を実行すると、ストレッチ／マッサージ／内臓ケアのテキストから WAV ファイルをまとめて生成できます。
+
+- **ファイル構成**  
+  - ストレッチ: `public/audio/stretch/<target>_stepN.wav`  
+  - マッサージ: `public/audio/massage/<part>_stepN.wav`  
+  - 内臓ケア: `public/audio/organ-care/<organ>_stepN.wav`
+
+- **再生ロジック**  
+  - `src/hooks/useStepAudio.ts` が共通フック。再生・一時停止・自動ステップ送りを管理。  
+  - 各シーンの音声パスは `src/lib/audio/audio-paths.ts` で組み立て。  
+  - ステップ完了後は `onEnded` コールバックで次のタイマーや画面更新をトリガーしています。
+
+---
+
 ## 🤝 フィードバック・お問い合わせ
 
 感想や不具合報告、こんなセルフケアを追加してほしいといった要望があれば、Issue や Pull Request でお気軽にどうぞ。  
