@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -16,7 +16,6 @@ export const metadata: Metadata = {
   title: "Self-Care 習慣トラッカー",
   description: "短時間セルフケアを続けるための毎日サポートアプリ。",
   manifest: "/manifest.json",
-  themeColor: "#F97316",
   icons: {
     icon: [
       {
@@ -38,6 +37,10 @@ export const metadata: Metadata = {
       },
     ],
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#F97316",
 };
 
 export default function RootLayout({

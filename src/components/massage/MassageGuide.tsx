@@ -9,7 +9,7 @@ import { getMassageGuide } from '@/lib/data/massage-data'
 import { StepIndicator } from './StepIndicator'
 import { getMassageAudioPath } from '@/lib/audio/audio-paths'
 import { useStepAudio } from '@/hooks/useStepAudio'
-import { Play, Pause, Square } from 'lucide-react'
+import { Play, Pause } from 'lucide-react'
 
 interface MassageGuideProps {
   part: MassagePart
@@ -157,7 +157,7 @@ export function MassageGuide({ part, onComplete, onBackToSelection }: MassageGui
     setAutoPlayAudio(true)
     setHasStarted(true)
     playStep(currentStep, true)
-  }, [autoPlayAudio, clearAutoAdvance, currentStep, hasStarted, pause, playStep, startedAt])
+  }, [autoPlayAudio, clearAutoAdvance, currentStep, pause, playStep, startedAt])
 
   const handleStopAudio = useCallback(() => {
     clearAutoAdvance()

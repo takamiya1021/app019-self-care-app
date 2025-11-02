@@ -9,7 +9,7 @@ import { Slider } from '@/components/ui/slider'
 import { getOrganCareGuide } from '@/lib/data/organ-care-data'
 import { getOrganAudioPath } from '@/lib/audio/audio-paths'
 import { useStepAudio } from '@/hooks/useStepAudio'
-import { Play, Pause, Square } from 'lucide-react'
+import { Play, Pause } from 'lucide-react'
 import { StepIndicator } from '../massage/StepIndicator'
 
 interface MeditationSessionProps {
@@ -147,15 +147,7 @@ export function MeditationSession({ organ, onComplete, onExit }: MeditationSessi
     setAutoPlayAudio(true)
     setHasStarted(true) // 開始
     playStep(currentStep, true) // ステップも更新
-  }, [autoPlayAudio, clearAutoAdvance, currentStep, hasStarted, pause, playStep, startTime])
-
-  const handleStopAudio = useCallback(() => {
-    clearAutoAdvance()
-    stop()
-    setAutoPlayAudio(false)
-    setHasStarted(false) // 停止
-    lastRequestedStepRef.current = null
-  }, [clearAutoAdvance, stop])
+  }, [autoPlayAudio, clearAutoAdvance, currentStep, pause, playStep, startTime])
 
   const submitFeedback = useCallback(() => {
     if (!mood || !startTime) return
