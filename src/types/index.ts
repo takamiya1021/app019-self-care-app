@@ -19,10 +19,11 @@ export interface SessionRecord {
   type: SelfCareType
   subtype?: string // 具体的な部位や臓器
   duration: number // 秒
-  completedAt: Date
+  completedAt: string // ISO8601形式
   rating: number // 1-5の満足度
   mood: 'energized' | 'relaxed' | 'calm' | 'refreshed'
-  scene: UsageScene
+  scene?: UsageScene
+  comment?: string
 }
 
 // 進捗データ
@@ -135,4 +136,20 @@ export interface SessionFeedback {
   rating: number // 1-5
   mood: 'energized' | 'relaxed' | 'calm' | 'refreshed'
   comment?: string
+  durationSeconds?: number
+  completedAt?: string // ISO8601形式
+}
+
+export interface RecentDayStatus {
+  date: string // YYYY-MM-DD（ローカル日付）
+  completed: boolean
+}
+
+export interface SessionSummary {
+  todayCompleted: boolean
+  totalSessions: number
+  currentStreak: number
+  longestStreak: number
+  recentDays: RecentDayStatus[]
+  lastSession?: SessionRecord
 }

@@ -1,14 +1,18 @@
 'use client'
 
-import { OrganType } from '@/types'
+import { useMemo } from 'react'
+import { OrganType, SessionFeedback } from '@/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { getAllOrganCareGuides } from '@/lib/data/organ-care-data'
+import { MeditationSession } from './MeditationSession'
 
 interface OrganSelectorProps {
   selectedOrgan?: OrganType
   onSelectOrgan: (organ: OrganType) => void
+  onClearSelection: () => void
+  onSessionComplete: (feedback: SessionFeedback) => void
   disabled?: boolean
 }
 
@@ -28,98 +32,115 @@ const organColors: Record<OrganType, string> = {
   intestine: 'bg-pink-50 border-pink-200 hover:bg-pink-100'
 }
 
-export function OrganSelector({ selectedOrgan, onSelectOrgan, disabled = false }: OrganSelectorProps) {
-  const organGuides = getAllOrganCareGuides()
+export function OrganSelector({
+  selectedOrgan,
+  onSelectOrgan,
+  onClearSelection,
+  onSessionComplete,
+  disabled = false
+}: OrganSelectorProps) {
+  const organGuides = useMemo(() => getAllOrganCareGuides(), [])
+
+  if (selectedOrgan) {
+    const guide = organGuides.find((item) => item.organ === selectedOrgan)
+    if (!guide) {
+      return null
+    }
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">{organIcons[guide.organ]}</span>
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900">{guide.name}</h2>
+              <p className="text-sm text-gray-600">{guide.description}</p>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" className="text-gray-500" onClick={onClearSelection}>
+            臓器一覧に戻る
+          </Button>
+        </div>
+
+        <div className="rounded-lg border border-indigo-200 bg-indigo-50/80 p-4 text-sm text-indigo-800 leading-relaxed">
+          <p className="font-semibold text-indigo-900 mb-1">{guide.name}の手の位置</p>
+          <p>{guide.position}</p>
+        </div>
+
+        <MeditationSession
+          key={guide.organ}
+          organ={guide.organ}
+          onComplete={onSessionComplete}
+          onExit={onClearSelection}
+        />
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="text-center space-y-2">
+    <div className="space-y-5">
+      <div>
         <h2 className="text-2xl font-bold text-gray-900">内臓ケアを選択</h2>
-        <p className="text-gray-600">
-          ケアしたい臓器を選んでください。手当て瞑想で身体への感謝を込めましょう。
+        <p className="text-sm text-gray-600">
+          気になる臓器を選んで、すぐにセルフケアを始めましょう。
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {organGuides.map((guide) => {
-          const isSelected = selectedOrgan === guide.organ
           const baseStyles = organColors[guide.organ]
 
           return (
             <Card
               key={guide.organ}
-              className={`cursor-pointer transition-all duration-200 ${baseStyles} ${
-                isSelected ? 'ring-2 ring-offset-2 ring-indigo-500' : ''
-              } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`transition-all duration-200 ${baseStyles} ${
+                disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg hover:scale-[1.01]'
+              }`}
               onClick={() => !disabled && onSelectOrgan(guide.organ)}
             >
               <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-3xl">{organIcons[guide.organ]}</span>
-                    <div>
-                      <CardTitle className="text-lg">{guide.name}</CardTitle>
-                      <CardDescription className="text-sm">
-                        {guide.description.substring(0, 50)}...
-                      </CardDescription>
-                    </div>
+                <div className="flex items-center space-x-3">
+                  <span className="text-3xl">{organIcons[guide.organ]}</span>
+                  <div>
+                    <CardTitle className="text-lg">{guide.name}</CardTitle>
+                    <CardDescription className="text-sm">
+                      {guide.description.substring(0, 60)}...
+                    </CardDescription>
                   </div>
-                  {isSelected && (
-                    <Badge variant="secondary" className="bg-indigo-100 text-indigo-800">
-                      選択中
-                    </Badge>
-                  )}
                 </div>
               </CardHeader>
 
-              <CardContent className="pt-0">
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600 line-clamp-2">
-                    {guide.description}
-                  </p>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-gray-600 line-clamp-2">
+                  {guide.description}
+                </p>
 
-                  <div className="flex flex-wrap gap-1">
-                    {guide.benefits.slice(0, 2).map((benefit, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {benefit}
-                      </Badge>
-                    ))}
-                    {guide.benefits.length > 2 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{guide.benefits.length - 2}
-                      </Badge>
-                    )}
-                  </div>
+                <div className="flex flex-wrap gap-1">
+                  {guide.benefits.slice(0, 3).map((benefit, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {benefit}
+                    </Badge>
+                  ))}
+                </div>
+
+                <div className="flex justify-end">
+                  <Button
+                    size="sm"
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                    disabled={disabled}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      if (disabled) return
+                      onSelectOrgan(guide.organ)
+                    }}
+                  >
+                    セッションを始める
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           )
         })}
-      </div>
-
-      {selectedOrgan && (
-        <div className="text-center">
-          <Button
-            size="lg"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3"
-            disabled={disabled}
-          >
-            {organGuides.find(g => g.organ === selectedOrgan)?.name}を始める
-          </Button>
-        </div>
-      )}
-
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start space-x-3">
-          <span className="text-blue-500 text-lg">ℹ️</span>
-          <div className="space-y-1">
-            <h4 className="font-medium text-blue-900">内臓ケアについて</h4>
-            <p className="text-sm text-blue-800">
-              内臓ケアは治療ではなく、セルフヒーリング瞑想です。
-              手当てによるオキシトシン分泌促進とリラックス効果が期待できます。
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   )

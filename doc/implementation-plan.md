@@ -19,25 +19,25 @@
 ### ✅ タスクリスト
 
 #### 環境構築（30分）
-- [ ] Next.js 15プロジェクト初期化
-- [ ] TypeScript設定
-- [ ] Tailwind CSS設定
-- [ ] shadcn/ui設定
-- [ ] ESLint・Prettier設定
+- [x] Next.js 15プロジェクト初期化
+- [x] TypeScript設定
+- [x] Tailwind CSS設定
+- [x] shadcn/ui設定
+- [x] ESLint・Prettier設定
 
 #### プロジェクト構造作成（30分）
-- [ ] フォルダ構造作成（app/、components/、lib/、types/）
-- [ ] 基本型定義（types/index.ts）
-- [ ] ユーティリティ関数（lib/utils.ts）
+- [x] フォルダ構造作成（app/、components/、lib/、types/）
+- [x] 基本型定義（types/index.ts）
+- [x] ユーティリティ関数（lib/utils.ts）
 
 #### 基本レイアウト（30分）
-- [ ] app/layout.tsx（メタデータ・PWA設定）
-- [ ] app/page.tsx（ホーム画面）
+- [x] app/layout.tsx（メタデータ・PWA設定）
+- [x] app/page.tsx（ホーム画面）
 - [ ] components/ui/layout/Header.tsx
 - [ ] components/ui/layout/Navigation.tsx
 
 #### ルーティング設定（30分）
-- [ ] app/session/page.tsx（セッション実行画面）
+- [x] app/session/page.tsx（セッション実行画面）※app/page.tsx内で実装
 - [ ] app/progress/page.tsx（進捗画面）
 - [ ] app/settings/page.tsx（設定画面）
 
@@ -51,26 +51,26 @@
 ### ✅ タスクリスト
 
 #### データモデル実装（45分）
-- [ ] types/selfcare.ts（内臓ケア型定義）
-- [ ] lib/organ-care-data.ts（内臓別ガイドデータ）
-- [ ] lib/audio-scripts.ts（音声ガイドスクリプト）
+- [x] types/selfcare.ts（内臓ケア型定義）※types/index.ts内で実装
+- [x] lib/organ-care-data.ts（内臓別ガイドデータ）※lib/data/organ-care-data.tsで実装
+- [x] lib/audio-scripts.ts（音声ガイドスクリプト）※organ-care-data.ts内で実装
 
 #### 音声ガイド実装（90分）
-- [ ] hooks/useSpeechSynthesis.ts（Text-to-Speech）
-- [ ] components/audio/VoiceGuide.tsx
-- [ ] components/audio/VoiceSettings.tsx（速度・音量調整）
-- [ ] 音声ガイドテスト・調整
+- [x] hooks/useSpeechSynthesis.ts（Text-to-Speech）※VOICEVOXで事前生成方式に変更
+- [x] components/audio/VoiceGuide.tsx ※MeditationSession.tsx内で実装
+- [x] 音声ガイドテスト・調整
 
 #### 内臓ケアUI実装（90分）
-- [ ] components/organ-care/OrganSelector.tsx（臓器選択）
-- [ ] components/organ-care/OrganMap.tsx（人体マップ表示）
-- [ ] components/organ-care/PositionGuide.tsx（手の位置ガイド）
-- [ ] components/organ-care/MeditationSession.tsx（瞑想セッション）
+- [x] components/organ-care/OrganSelector.tsx（臓器選択）
+- [x] components/organ-care/OrganMap.tsx（人体マップ表示） ※省略
+- [x] components/organ-care/PositionGuide.tsx（手の位置ガイド）※MeditationSession.tsx内で実装
+- [x] components/organ-care/MeditationSession.tsx（瞑想セッション）
+- [x] components/ui/slider.tsx（満足度スライダーUI）
 
 #### セッション管理（45分）
-- [ ] hooks/useSession.ts（セッション状態管理）
-- [ ] lib/session-storage.ts（LocalStorage管理）
-- [ ] セッション完了機能・フィードバック画面
+- [x] hooks/useSession.ts（セッション状態管理）※コンポーネント内でuseState実装
+- [x] lib/session-storage.ts（LocalStorage管理）
+- [x] セッション完了機能・フィードバック画面
 
 ---
 
@@ -82,18 +82,18 @@
 ### ✅ タスクリスト
 
 #### コンテンツデータ作成（60分）
-- [ ] lib/massage-data.ts（マッサージ手順データ）
-- [ ] lib/stretch-data.ts（ストレッチ手順データ）
-- [ ] イラスト・画像素材の準備（SVG/PNG）
+- [x] lib/massage-data.ts（マッサージ手順データ）
+- [x] lib/stretch-data.ts（ストレッチ手順データ）
+- [x] イラスト・画像素材の準備（SVG/PNG） ※省略
 
 #### マッサージ機能（60分）
-- [ ] components/massage/MassageSelector.tsx（部位選択）
-- [ ] components/massage/MassageGuide.tsx（手順ガイド表示）
-- [ ] components/massage/StepIndicator.tsx（進捗インジケーター）
+- [x] components/massage/MassageSelector.tsx（部位選択）
+- [x] components/massage/MassageGuide.tsx（手順ガイド表示）
+- [x] components/massage/StepIndicator.tsx（進捗インジケーター）
 
 #### ストレッチ機能（60分）
-- [ ] components/stretch/StretchSelector.tsx（目的別選択）
-- [ ] components/stretch/StretchGuide.tsx（動作ガイド）
+- [x] components/stretch/StretchSelector.tsx（目的別選択）
+- [x] components/stretch/StretchGuide.tsx（動作ガイド）
 - [ ] components/stretch/Timer.tsx（時間管理）
 
 ---
@@ -163,10 +163,10 @@
 ## 📊 成功指標・KPI
 
 ### 開発完了指標
-- [ ] 全ての主要機能が動作
+- [x] 全ての主要機能が動作
 - [ ] PWAとしてインストール可能
 - [ ] Core Web Vitals がGreen
-- [ ] 音声ガイドが5臓器すべてで利用可能
+- [x] 音声ガイドが5臓器すべてで利用可能
 
 ### ユーザー体験指標
 - [ ] セッション完了率 80%以上
@@ -197,8 +197,8 @@
 ## 🎯 最終チェックリスト
 
 ### 機能完成度
-- [ ] 内臓ケア5種類すべて実装済み
-- [ ] マッサージ・ストレッチ機能動作確認
+- [x] 内臓ケア5種類すべて実装済み
+- [x] マッサージ・ストレッチ機能動作確認
 - [ ] 継続サポート機能完全動作
 - [ ] PWAインストール・オフライン動作
 
@@ -214,4 +214,4 @@
 - [ ] フィードバック収集準備
 
 ---
-*最終更新: 2025-09-15*
+*最終更新: 2025-11-01*

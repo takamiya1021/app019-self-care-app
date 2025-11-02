@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { OrganType, SessionFeedback } from '@/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
-import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis'
+import { Slider } from '@/components/ui/slider'
 import { getOrganCareGuide } from '@/lib/data/organ-care-data'
-import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX } from 'lucide-react'
+import { getOrganAudioPath } from '@/lib/audio/audio-paths'
+import { useStepAudio } from '@/hooks/useStepAudio'
+import { Play, Pause, Square } from 'lucide-react'
+import { StepIndicator } from '../massage/StepIndicator'
 
 interface MeditationSessionProps {
   organ: OrganType
@@ -17,108 +19,176 @@ interface MeditationSessionProps {
 }
 
 export function MeditationSession({ organ, onComplete, onExit }: MeditationSessionProps) {
-  const guide = getOrganCareGuide(organ)
+  const guide = useMemo(() => getOrganCareGuide(organ), [organ])
+  const totalSteps = guide.audioScript.length
   const [currentStep, setCurrentStep] = useState(0)
-  const [isStarted, setIsStarted] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
   const [startTime, setStartTime] = useState<Date | null>(null)
-  const [rating, setRating] = useState<number>(0)
+  const [rating, setRating] = useState<number>(3)
   const [mood, setMood] = useState<SessionFeedback['mood'] | null>(null)
+  const [autoPlayAudio, setAutoPlayAudio] = useState(false)
+  const [hasStarted, setHasStarted] = useState(false)
 
-  const { speak, speakSequence, stop, pause, resume, isPlaying, isSupported } = useSpeechSynthesis({
-    voiceSettings: {
-      rate: 0.8,
-      pitch: 1.0,
-      volume: 0.9
+  const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastRequestedStepRef = useRef<number | null>(null)
+  const handleAudioEndedRef = useRef<(stepIndex: number) => void>(() => {})
+
+  const clearAutoAdvance = useCallback(() => {
+    if (autoAdvanceTimer.current) {
+      clearTimeout(autoAdvanceTimer.current)
+      autoAdvanceTimer.current = null
+    }
+  }, [])
+
+  const getAudioSrc = useCallback(
+    (stepIndex: number) => getOrganAudioPath(organ, stepIndex),
+    [organ]
+  )
+
+  const { isSupported: isAudioSupported, play, pause, stop } = useStepAudio({
+    getAudioSrc,
+    onEnded: (stepIndex) => {
+      handleAudioEndedRef.current(stepIndex)
     }
   })
 
-  const progress = (currentStep / guide.audioScript.length) * 100
+  const playStep = useCallback(
+    (stepIndex: number, updateStep = false) => {
+      clearAutoAdvance()
+      lastRequestedStepRef.current = stepIndex
+      if (updateStep) {
+        setCurrentStep(stepIndex)
+      }
+      void play(stepIndex)
+    },
+    [clearAutoAdvance, play]
+  )
 
-  // セッション開始
-  const startSession = useCallback(async () => {
-    setIsStarted(true)
-    setStartTime(new Date())
-    setCurrentStep(0)
+  useEffect(() => {
+    handleAudioEndedRef.current = (stepIndex: number) => {
+      const advance = () => {
+        lastRequestedStepRef.current = null
 
-    try {
-      await speakSequence(
-        guide.audioScript,
-        { rate: 0.8, pitch: 1.0, volume: 0.9 },
-        (index, total) => {
-          setCurrentStep(index + 1)
-          if (index >= total) {
-            setIsCompleted(true)
-            setIsStarted(false)
+        if (stepIndex < totalSteps - 1) {
+          const nextStep = stepIndex + 1
+          if (autoPlayAudio) {
+            playStep(nextStep, true)
+          } else {
+            setCurrentStep(nextStep)
           }
+        } else {
+          setIsCompleted(true)
+          setAutoPlayAudio(false)
+          setHasStarted(false) // セッション完了時にリセット
         }
-      )
-    } catch (error) {
-      console.error('音声ガイドエラー:', error)
-    }
-  }, [guide.audioScript, speakSequence])
+      }
 
-  // 音声コントロール
-  const handlePlayPause = () => {
-    if (isPlaying) {
-      pause()
-    } else if (isStarted) {
-      resume()
-    } else {
-      startSession()
-    }
-  }
+      clearAutoAdvance()
 
-  const handleStop = () => {
+      if (autoPlayAudio && stepIndex < totalSteps - 1) {
+        autoAdvanceTimer.current = setTimeout(advance, 2000)
+      } else {
+        advance()
+      }
+    }
+  }, [autoPlayAudio, clearAutoAdvance, playStep, totalSteps])
+
+  const startSession = useCallback(() => {
+    clearAutoAdvance()
     stop()
-    setIsStarted(false)
+    setIsCompleted(false)
     setCurrentStep(0)
-  }
+    setStartTime(new Date())
+    setMood(null)
+    setRating(3)
+    lastRequestedStepRef.current = null
+    setAutoPlayAudio(true)
+    setHasStarted(true) // 開始
+    playStep(0, true) // ステップも更新
+  }, [clearAutoAdvance, playStep, stop])
 
-  const handleSkipForward = async () => {
-    if (currentStep < guide.audioScript.length) {
-      stop()
-      const nextStep = Math.min(currentStep + 1, guide.audioScript.length - 1)
-      setCurrentStep(nextStep)
-      try {
-        await speak(guide.audioScript[nextStep])
-      } catch (error) {
-        console.error('音声再生エラー:', error)
-      }
-    }
-  }
-
-  const handleSkipBack = async () => {
-    if (currentStep > 0) {
-      stop()
-      const prevStep = Math.max(currentStep - 1, 0)
-      setCurrentStep(prevStep)
-      try {
-        await speak(guide.audioScript[prevStep])
-      } catch (error) {
-        console.error('音声再生エラー:', error)
-      }
-    }
-  }
-
-  // フィードバック送信
-  const submitFeedback = () => {
-    if (rating > 0 && mood && startTime) {
-      const duration = Math.floor((new Date().getTime() - startTime.getTime()) / 1000)
-      onComplete({
-        rating,
-        mood,
-        comment: undefined
-      })
-    }
-  }
-
-  // クリーンアップ
   useEffect(() => {
     return () => {
+      clearAutoAdvance()
       stop()
     }
-  }, [stop])
+  }, [clearAutoAdvance, stop])
+
+  const handleStopSession = useCallback(() => {
+    clearAutoAdvance()
+    stop()
+    setCurrentStep(0)
+    setStartTime(null)
+    setAutoPlayAudio(false)
+    setIsCompleted(false)
+    setHasStarted(false) // 停止
+    lastRequestedStepRef.current = null
+  }, [clearAutoAdvance, stop])
+
+  const handleExitToList = useCallback(() => {
+    handleStopSession()
+    onExit()
+  }, [handleStopSession, onExit])
+
+  const handleTogglePlay = useCallback(() => {
+    if (autoPlayAudio) {
+      clearAutoAdvance()
+      pause()
+      setAutoPlayAudio(false)
+      lastRequestedStepRef.current = null
+      return
+    }
+
+    if (!startTime) {
+      setStartTime(new Date())
+    }
+    setIsCompleted(false)
+    lastRequestedStepRef.current = null
+    setAutoPlayAudio(true)
+    setHasStarted(true) // 開始
+    playStep(currentStep, true) // ステップも更新
+  }, [autoPlayAudio, clearAutoAdvance, currentStep, hasStarted, pause, playStep, startTime])
+
+  const handleStopAudio = useCallback(() => {
+    clearAutoAdvance()
+    stop()
+    setAutoPlayAudio(false)
+    setHasStarted(false) // 停止
+    lastRequestedStepRef.current = null
+  }, [clearAutoAdvance, stop])
+
+  const submitFeedback = useCallback(() => {
+    if (!mood || !startTime) return
+
+    const endTime = new Date()
+    const durationSeconds = Math.max(
+      1,
+      Math.floor((endTime.getTime() - startTime.getTime()) / 1000)
+    )
+
+    onComplete({
+      rating,
+      mood,
+      comment: undefined,
+      durationSeconds,
+      completedAt: endTime.toISOString()
+    })
+
+    clearAutoAdvance()
+    stop()
+    setStartTime(null)
+    setIsCompleted(false)
+    setCurrentStep(0)
+    setMood(null)
+    setRating(3)
+    setHasStarted(false) // 送信後リセット
+  }, [clearAutoAdvance, mood, onComplete, rating, startTime, stop])
+
+  useEffect(() => {
+    if (!autoPlayAudio) {
+      clearAutoAdvance()
+    }
+  }, [autoPlayAudio, clearAutoAdvance])
 
   const organEmojis: Record<OrganType, string> = {
     kidney: '🫘',
@@ -137,10 +207,10 @@ export function MeditationSession({ organ, onComplete, onExit }: MeditationSessi
 
   if (isCompleted) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Card className="border-green-200 bg-green-50">
           <CardHeader className="text-center">
-            <div className="text-6xl mb-4">🎉</div>
+            <div className="text-6xl mb-3">🎉</div>
             <CardTitle className="text-2xl text-green-800">
               {guide.name}完了！
             </CardTitle>
@@ -152,193 +222,143 @@ export function MeditationSession({ organ, onComplete, onExit }: MeditationSessi
 
         <Card>
           <CardHeader>
-            <CardTitle>セッションの感想をお聞かせください</CardTitle>
+            <CardTitle>セッションのフィードバック</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* 満足度評価 */}
             <div>
               <label className="block text-sm font-medium mb-3">満足度（1-5）</label>
-              <div className="flex space-x-2">
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <Button
-                    key={value}
-                    variant={rating === value ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setRating(value)}
-                    className="w-12 h-12"
-                  >
-                    {'⭐'.repeat(value)}
-                  </Button>
-                ))}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-4">
+                  <Slider
+                    aria-label="満足度"
+                    min={1}
+                    max={5}
+                    step={1}
+                    value={[rating]}
+                    onValueChange={(value) => {
+                      const nextValue = value[0]
+                      if (typeof nextValue === 'number') {
+                        setRating(nextValue)
+                      }
+                    }}
+                  />
+                  <span className="text-lg font-semibold text-green-700">{rating}</span>
+                </div>
+                <p className="text-sm text-gray-500">1 いまいち 〜 5 最高</p>
               </div>
             </div>
 
-            {/* 気分選択 */}
             <div>
-              <label className="block text-sm font-medium mb-3">今の気分は？</label>
+              <label className="block text-sm font-medium mb-3">いまの気分</label>
               <div className="grid grid-cols-2 gap-3">
                 {moodOptions.map((option) => (
-                  <Button
+                  <button
                     key={option.value}
-                    variant={mood === option.value ? 'default' : 'outline'}
+                    type="button"
+                    className={`flex items-center justify-center gap-2 rounded-lg border p-3 text-sm transition ${
+                      mood === option.value
+                        ? 'border-green-500 bg-green-50 text-green-700'
+                        : 'border-gray-200 hover:border-green-300 hover:bg-green-50 text-gray-600'
+                    }`}
                     onClick={() => setMood(option.value)}
-                    className="h-16 flex flex-col space-y-1"
                   >
-                    <span className="text-2xl">{option.emoji}</span>
-                    <span className="text-sm">{option.label}</span>
-                  </Button>
+                    <span className="text-lg">{option.emoji}</span>
+                    <span>{option.label}</span>
+                  </button>
                 ))}
               </div>
             </div>
 
-            {/* 送信ボタン */}
-            <div className="flex space-x-3">
-              <Button
-                onClick={submitFeedback}
-                disabled={rating === 0 || !mood}
-                className="flex-1 bg-green-600 hover:bg-green-700"
-              >
-                完了
+            <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={startSession}>
+                もう一度行う
               </Button>
-              <Button variant="outline" onClick={onExit}>
-                スキップ
+              <Button
+                className="bg-green-600 hover:bg-green-700"
+                onClick={submitFeedback}
+                disabled={!mood}
+              >
+                記録する
               </Button>
             </div>
           </CardContent>
         </Card>
+
+        <div className="text-right">
+          <Button variant="ghost" className="text-sm text-gray-500" onClick={handleExitToList}>
+            臓器一覧に戻る
+          </Button>
+        </div>
       </div>
     )
   }
 
+  const currentScript = guide.audioScript[currentStep]
+
   return (
-    <div className="space-y-6">
-      {/* ヘッダー */}
+    <div className="space-y-4">
       <Card>
-        <CardHeader>
+        <CardContent className="space-y-6 pt-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <span className="text-4xl">{organEmojis[organ]}</span>
-              <div>
-                <CardTitle className="text-xl">{guide.name}</CardTitle>
-                <p className="text-gray-600">{guide.description}</p>
-              </div>
+            <div className="flex-grow">
+              <StepIndicator
+                currentStep={currentStep}
+                totalSteps={totalSteps}
+                hasStarted={hasStarted}
+                isCompleted={isCompleted}
+              />
             </div>
-            <Button variant="outline" onClick={onExit}>
-              終了
-            </Button>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* 進捗表示 */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">進捗</span>
-              <span className="text-sm text-gray-600">
-                {currentStep} / {guide.audioScript.length}
-              </span>
-            </div>
-            <Progress value={progress} className="h-2" />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 手の位置ガイド */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center space-x-2">
-            <span>👋</span>
-            <span>手の位置</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-blue-800">{guide.position}</p>
-        </CardContent>
-      </Card>
-
-      {/* 音声コントロール */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex justify-center items-center space-x-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSkipBack}
-              disabled={currentStep === 0 || !isStarted}
-            >
-              <SkipBack className="w-4 h-4" />
-            </Button>
-
-            <Button
-              size="lg"
-              onClick={handlePlayPause}
-              className="w-16 h-16 rounded-full bg-indigo-600 hover:bg-indigo-700"
-              disabled={!isSupported}
-            >
-              {isPlaying ? (
-                <Pause className="w-6 h-6" />
-              ) : (
-                <Play className="w-6 h-6" />
-              )}
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSkipForward}
-              disabled={currentStep >= guide.audioScript.length - 1 || !isStarted}
-            >
-              <SkipForward className="w-4 h-4" />
-            </Button>
+            <Badge variant="outline" className="ml-4 text-xs text-indigo-700 border-indigo-200 bg-indigo-50/70">
+              {organEmojis[organ]}
+            </Badge>
           </div>
 
-          {!isSupported && (
-            <div className="text-center mt-4">
-              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                <VolumeX className="w-4 h-4 mr-1" />
-                音声ガイドが利用できません
-              </Badge>
-            </div>
-          )}
+          <div className="rounded-2xl border-2 border-indigo-200 bg-white/95 p-6 shadow-sm">
+            <p className="text-xl font-semibold leading-relaxed text-gray-900 md:text-2xl">
+              {currentScript}
+            </p>
+          </div>
 
-          {isStarted && (
-            <div className="text-center mt-4">
-              <Button variant="outline" onClick={handleStop}>
-                停止
+          {isAudioSupported ? (
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Button
+                variant="default"
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-700"
+                onClick={handleTogglePlay}
+              >
+                {autoPlayAudio ? (
+                  <>
+                    <Pause className="size-4" />
+                    一時停止
+                  </>
+                ) : (
+                  <>
+                    <Play className="size-4" />
+                    スタート
+                  </>
+                )}
               </Button>
             </div>
+          ) : (
+            <span className="text-xs text-gray-500">
+              このブラウザでは音声ガイドが利用できません。
+            </span>
           )}
-        </CardContent>
-      </Card>
 
-      {/* 現在のガイドテキスト */}
-      {isStarted && currentStep > 0 && (
-        <Card className="bg-indigo-50 border-indigo-200">
-          <CardContent className="pt-6">
-            <p className="text-indigo-800 text-center font-medium">
-              {guide.audioScript[currentStep - 1]}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 期待効果 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">期待できる効果</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {guide.benefits.map((benefit, index) => (
-              <Badge key={index} variant="outline" className="text-xs">
-                {benefit}
-              </Badge>
-            ))}
+          <div className="flex justify-end">
+            <Button variant="ghost" className="text-sm text-gray-500" onClick={handleStopSession}>
+              中断して最初からやり直す
+            </Button>
           </div>
         </CardContent>
       </Card>
+
+      <div className="text-right">
+        <Button variant="ghost" className="text-sm text-gray-500" onClick={handleExitToList}>
+          臓器一覧に戻る
+        </Button>
+      </div>
     </div>
   )
 }

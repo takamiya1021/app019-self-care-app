@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { VoiceSettings } from '@/types'
 
 interface UseSpeechSynthesisProps {
@@ -15,13 +15,13 @@ export function useSpeechSynthesis(props: UseSpeechSynthesisProps = {}) {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
 
   // デフォルト設定
-  const defaultSettings: VoiceSettings = {
+  const defaultSettings = useMemo<VoiceSettings>(() => ({
     lang: 'ja-JP',
     rate: 0.8,
     pitch: 1.0,
     volume: 0.9,
     ...props.voiceSettings
-  }
+  }), [props.voiceSettings])
 
   // 音声合成サポート確認
   useEffect(() => {

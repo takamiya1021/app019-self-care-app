@@ -12,7 +12,7 @@
 - **フレームワーク**: Next.js 15 (App Router)
 - **言語**: TypeScript 5.x
 - **スタイリング**: Tailwind CSS 3.x
-- **UI コンポーネント**: shadcn/ui (Radix UI ベース)
+- **UI コンポーネント**: shadcn/ui（Radix UIベース） + `@radix-ui/react-slider`
 - **状態管理**: Zustand (軽量・シンプル)
 
 ### PWA 対応
@@ -21,7 +21,7 @@
 - **オフライン対応**: 基本機能はオフライン動作
 
 ### 音声・メディア
-- **音声ガイド**: Web Speech API (Text-to-Speech)
+- **音声ガイド**: 事前生成音声ファイル（VOICEVOX）を再生
 - **BGM**: 音声ファイル（MP3/OGG）
 - **イラスト**: SVG + PNG (最適化済み)
 
@@ -133,17 +133,18 @@ interface ProgressData {
 - **進捗表示**: Smooth Progress Bar
 - **画面遷移**: Fade + Slide
 
+### フィードバックフォーム UI
+- **満足度コントロール**: `@radix-ui/react-slider` を用いた離散スライダー（min:1 / max:5 / step:1）
+- **初期値**: 3（ニュートラルな評価をデフォルト提示し、未選択状態を防止）
+- **ラベル表示**: スライダー下部に「1 いまいち〜5 最高」のテキストラベルを配置し意味付けを明確化
+- **送信条件**: 満足度（1〜5）と気分選択の両方がセットされている場合のみ「完了」ボタンを活性化
+- **アクセシビリティ**: `aria-label="満足度"` を指定し、キーボード操作で値を変更可能
+
 ## 🔊 音声ガイド実装
 
-### Text-to-Speech 設定
-```typescript
-interface VoiceSettings {
-  lang: 'ja-JP'
-  rate: 0.8 // ゆっくり
-  pitch: 1.0 // 標準
-  volume: 0.9 // 少し小さめ
-}
-```
+- **再生方式**: VOICEVOXで生成した音声ファイル（`public/audio/organ-care/*.wav`）をステップごとに再生
+- **再生制御**: `MeditationSession` 内で各ステップのオーディオをロードし、完了時に次ステップへ自動遷移
+- **ユーザー設定**: 音量・速度のUI調整は提供せず、デバイス側コントロールに委ねる
 
 ### 音声スクリプト例（内臓ケア）
 ```typescript
